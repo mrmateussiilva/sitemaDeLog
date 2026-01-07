@@ -24,6 +24,9 @@ class ZigBackend:
         self.lib.processarHtml.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
         self.lib.processarHtml.restype = ctypes.c_int
 
+        self.lib.processarCsv.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+        self.lib.processarCsv.restype = ctypes.c_int
+
         self.lib.processarDiretorio.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
         self.lib.processarDiretorio.restype = ctypes.c_int
 
@@ -42,6 +45,13 @@ class ZigBackend:
         html_bytes = caminho_html.encode("utf-8")
         json_bytes = caminho_json.encode("utf-8")
         result = self.lib.processarHtml(html_bytes, json_bytes)
+        return result == 0
+
+    def processar_csv(self, caminho_csv: str, caminho_json: str) -> bool:
+        """Processa um arquivo CSV individual"""
+        csv_bytes = caminho_csv.encode("utf-8")
+        json_bytes = caminho_json.encode("utf-8")
+        result = self.lib.processarCsv(csv_bytes, json_bytes)
         return result == 0
 
     def processar_diretorio(self, origem: str, destino: str) -> bool:
