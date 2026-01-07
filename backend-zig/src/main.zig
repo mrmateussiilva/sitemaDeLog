@@ -1,4 +1,5 @@
 const std = @import("std");
+const csv_parser = @import("csv_parser.zig");
 
 // Função auxiliar para encontrar valor após uma chave HTML
 fn encontrarValor(html: []const u8, chave: []const u8) ?[]const u8 {
@@ -115,6 +116,30 @@ export fn processarHtml(
     return 0;
 }
 
+// Processar um arquivo CSV individual
+export fn processarCsv(
+    caminho_csv: [*:0]const u8,
+    caminho_json_saida: [*:0]const u8,
+) i32 {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    // Ler e processar CSV
+    const caminho_csv_slice = std.mem.sliceTo(caminho_csv, 0);
+    const json_content = csv_parser.processarCsvParaJson(allocator, caminho_csv_slice) catch return -1;
+    defer allocator.free(json_content);
+
+    // Escrever JSON no arquivo de saída
+    const caminho_json_slice = std.mem.sliceTo(caminho_json_saida, 0);
+    const arquivo_json = std.fs.cwd().createFile(caminho_json_slice, .{}) catch return -1;
+    defer arquivo_json.close();
+
+    arquivo_json.writeAll(json_content) catch return -1;
+
+    return 0;
+}
+
 // Processar diretório inteiro
 export fn processarDiretorio(
     path_origem: [*:0]const u8,
@@ -145,25 +170,33 @@ export fn processarDiretorio(
         if (entry.kind != .file) continue;
         
         const nome = entry.name;
-        if (!std.mem.endsWith(u8, nome, ".html") and !std.mem.endsWith(u8, nome, ".HTML")) {
+        const is_html = std.mem.endsWith(u8, nome, ".html") or std.mem.endsWith(u8, nome, ".HTML");
+        const is_csv = std.mem.endsWith(u8, nome, ".csv") or std.mem.endsWith(u8, nome, ".CSV");
+        
+        if (!is_html and !is_csv) {
             continue;
         }
 
         // Construir caminhos completos
-        const caminho_html = std.fmt.allocPrint(allocator, "{s}/{s}", .{ origem_slice, nome }) catch return -1;
-        defer allocator.free(caminho_html);
+        const caminho_arquivo = std.fmt.allocPrint(allocator, "{s}/{s}", .{ origem_slice, nome }) catch return -1;
+        defer allocator.free(caminho_arquivo);
 
         const nome_base = nome[0..std.mem.lastIndexOfScalar(u8, nome, '.') orelse nome.len];
         const caminho_json_temp = std.fmt.allocPrint(allocator, "{s}/{s}.json", .{ destino_slice, nome_base }) catch return -1;
         defer allocator.free(caminho_json_temp);
 
-        // Processar arquivo
-        const caminho_html_c = allocator.dupeZ(u8, caminho_html) catch return -1;
-        defer allocator.free(caminho_html_c);
+        // Processar arquivo (HTML ou CSV)
+        const caminho_arquivo_c = allocator.dupeZ(u8, caminho_arquivo) catch return -1;
+        defer allocator.free(caminho_arquivo_c);
         const caminho_json_c = allocator.dupeZ(u8, caminho_json_temp) catch return -1;
         defer allocator.free(caminho_json_c);
 
-        if (processarHtml(caminho_html_c, caminho_json_c) != 0) {
+        const resultado = if (is_html)
+            processarHtml(caminho_arquivo_c, caminho_json_c)
+        else
+            processarCsv(caminho_arquivo_c, caminho_json_c);
+
+        if (resultado != 0) {
             continue; // Pula arquivos com erro
         }
 
