@@ -5,8 +5,9 @@ backend-zig/.zig-cache/
 .zig-cache/
 zig-cache/
 *.o
-*.so
-*.dll
+# Permitir binários compilados em dist/ para distribuição
+# *.so
+# *.dll
 *.dylib
 
 # Python
@@ -21,7 +22,7 @@ ENV/
 .venv
 
 # Distribuição
-# dist/
+# dist/ - NÃO ignorar, contém binários para distribuição
 *.egg-info/
 build/
 
