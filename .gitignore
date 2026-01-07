@@ -21,7 +21,7 @@ ENV/
 .venv
 
 # Distribuição
-dist/
+# dist/
 *.egg-info/
 build/
 
