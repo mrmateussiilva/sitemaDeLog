@@ -139,16 +139,30 @@ O backend expõe as seguintes funções via FFI:
    - Entrada: caminho do HTML, caminho de saída JSON
    - Saída: 0 (sucesso) ou -1 (erro)
 
-2. **`processarDiretorio`**: Processa todos os HTMLs de um diretório
+2. **`processarCsv`**: Processa um arquivo CSV individual
+   - Entrada: caminho do CSV, caminho de saída JSON
+   - Saída: 0 (sucesso) ou -1 (erro)
+
+3. **`processarDiretorio`**: Processa todos os arquivos HTML e CSV de um diretório
    - Entrada: diretório origem, diretório destino
    - Saída: JSON consolidado em `resultado.json`
+   - Detecta automaticamente HTML e CSV pela extensão
 
-3. **`calcularMetros`**: Calcula metros baseado em dimensão e cópias
+4. **`calcularMetros`**: Calcula metros baseado em dimensão e cópias
    - Fórmula: `(altura_cm × quantidade_cópias) / 100`
 
-4. **`limparNomeArquivo`**: Remove caminho completo, retorna apenas nome
+5. **`limparNomeArquivo`**: Remove caminho completo, retorna apenas nome
 
-### Formato de Entrada (HTML)
+## Formatos Suportados
+
+O sistema processa dois formatos de log:
+
+### HTML
+
+- **Máquinas**: DX-1602, DX-1604
+- **Estrutura**: Tabelas HTML com pares `<TH>` / `<TD>`
+- **Encoding**: latin-1 ou UTF-8
+- **Extensões**: `.html`, `.HTML`
 
 O parser espera HTML com estrutura de tabela:
 
@@ -161,6 +175,34 @@ O parser espera HTML com estrutura de tabela:
   <tr><th>QUANTIDADE DE CÓPIAS:</th><td>2</td></tr>
 </table>
 ```
+
+### CSV
+
+- **Máquinas**: [A definir conforme máquinas que geram CSV]
+- **Estrutura**: Colunas separadas por vírgula
+- **Encoding**: UTF-8
+- **Extensões**: `.csv`, `.CSV`
+- **Formato**: 
+  ```csv
+  Data,Hora,Arquivo,Largura,Altura,Unidade,Copias
+  03/01/2024,07:47:47,PAINEL PATRULHA CANINA 11.tif,158.0,158.0,cm,1
+  03/01/2024,12:45:36,GIRAFA malha 158x210.tif,158.0,210.4,cm,1
+  ```
+
+**Campos CSV:**
+- `Data`: Data no formato DD/MM/YYYY
+- `Hora`: Hora no formato HH:MM:SS
+- `Arquivo`: Nome do arquivo (pode incluir caminho)
+- `Largura`: Largura em cm ou polegadas
+- `Altura`: Altura em cm ou polegadas
+- `Unidade`: Unidade de medida (`cm` ou `in`/`inch`/`inches`)
+- `Copias`: Quantidade de cópias (número inteiro)
+
+**Conversão de Unidades:**
+- Se a unidade for `in`, `IN`, `inch` ou `inches`, a altura é convertida para cm (multiplicando por 2.54)
+- O cálculo de metros sempre usa cm: `metros = (altura_cm × quantidade_cópias) / 100`
+
+O sistema detecta automaticamente o formato pela extensão do arquivo.
 
 ### Formato de Saída (JSON)
 
@@ -180,9 +222,9 @@ O parser espera HTML com estrutura de tabela:
 
 1. Abra a aplicação: `python frontend-python/gui_app.py`
 2. Clique em "Processar Logs"
-3. Selecione o diretório com arquivos HTML
+3. Selecione o diretório com arquivos HTML e/ou CSV
 4. Selecione o diretório de destino
-5. Aguarde o processamento
+5. Aguarde o processamento (o sistema detecta automaticamente HTML e CSV)
 6. Clique em "Carregar Tabela" para visualizar os resultados
 
 ### Via Python (Programático)
